@@ -19,7 +19,7 @@ def main():
     args = parser.parse_args()
 
     # Python Reddit Api Wrapper
-    print('Get top wallpaper - by /u/ssimunic & /u/admin-mod')
+    print('Get top wallpaper - by /u/admin-mod (original by /u/ssimunic)')
     print('Sub(s) - {0}'.format(args.subreddit))
 
     imageLocation = get_image_from_reddit(args.subreddit, args.time)
@@ -57,7 +57,7 @@ def get_top_image(subreddit, time):
 
 
 def get_image_from_reddit(subreddit, time):
-
+    # Get Praw object
     r = praw.Reddit(user_agent="Get top wallpaper - by /u/ssimunic & /u/admin-mod")
     # Get top image paths in a list
     imageUrls = get_top_image(r.get_subreddit(subreddit), time)
@@ -67,31 +67,43 @@ def get_image_from_reddit(subreddit, time):
         random.seed()
         imageUrl = imageUrls[random.randint(0, len(imageUrls) - 1)]
 
+        # Get home directory and location where image will be saved (default location for Ubuntu is used)
+        homedir = os.path.expanduser('~')
+        fileName = imageUrl.rsplit("/", 1)[1]
+        imageLocation = homedir + "\\Pictures\\Wallpapers\\" + fileName
+        
+        # Create folders if they don't exist
+        dir = os.path.dirname(imageLocation)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+
+        # See if image is available locally. If yes, re-use
+        files = [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir, f))]
+        if fileName in files:
+            print('Image found in the local dir. Will be reused!')
+            return imageLocation
+
         # Request image
         print('Requesting image - ', imageUrl)
-        response = requests.get(imageUrl)
+        try:
+            response = requests.get(imageUrl)
+        except:
+            print('Unable to connect to internet. Re-using local files...')
+            return os.path.join(dir, files[random.randint(0, len(files) - 1)])
 
-        # If image is available, proceed to save
+        # If image is available online, proceed to save
         if response.status_code == 200:
             print('Image found!')
-            # Get home directory and location where image will be saved (default location for Ubuntu is used)
-            homedir = os.path.expanduser('~')
-            id = imageUrl.rsplit("/", 1)[1].rsplit(".", 1)[0]
-            saveLocation = homedir + "/Pictures/Wallpapers/" + id + ".jpg"
-
-            # Create folders if they don't exist
-            dir = os.path.dirname(saveLocation)
-            if not os.path.exists(dir):
-                os.makedirs(dir)
-
+            
             # Write to disk
-            with open(saveLocation, 'wb') as fo:
+            with open(imageLocation, 'wb') as fo:
                 for chunk in response.iter_content(4096):
                     fo.write(chunk)
+            print('Image saved at - ', imageLocation)
 
             # Check if HD width>=1900
             hd = False
-            with Image.open(saveLocation, 'r') as im:
+            with Image.open(imageLocation, 'r') as im:
                 width, height = im.size
                 if width < 1920:
                     print('Image ({0}x{1}) is not HD(width>=1920). Skipping...'.format(width, height))
@@ -101,10 +113,10 @@ def get_image_from_reddit(subreddit, time):
                     hd = True
             # If HD Image then all good, return with the location
             if hd:
-                return saveLocation
+                return imageLocation
             # If not, then remove the image and try another one
             else:
-                os.remove(saveLocation)
+                os.remove(imageLocation)
                 continue
         else:
             print('Image not found!')
