@@ -39,7 +39,7 @@ def main():
 
 
 # Get image link of most upvoted wallpaper of the day
-def get_top_image(subreddit, time):
+def get_top_images(subreddit, time):
     urls = []
     for submission in subreddit.get_top(params={'t': time}, limit=20):
         url = submission.url
@@ -59,27 +59,38 @@ def get_top_image(subreddit, time):
 def get_image_from_reddit(subreddit, time):
     # Get Praw object
     r = praw.Reddit(user_agent="Get top wallpaper - by /u/ssimunic & /u/admin-mod")
+
+    # Get home directory and location where image will be saved (default location for Ubuntu is used)
+    homedir = os.path.expanduser('~')
+    wallpaprDir = homedir + "\\Pictures\\Wallpapers\\"
+
+    # Create folder if it doesn't exist
+    if not os.path.exists(wallpaprDir):
+        os.makedirs(wallpaprDir)
+
+    # Get list of existing files
+    files = [f for f in os.listdir(wallpaprDir)
+             if os.path.isfile(os.path.join(wallpaprDir, f)) and
+             f.endswith(tuple([".jpg", ".png", ".jpeg"]))]
+
     # Get top image paths in a list
-    imageUrls = get_top_image(r.get_subreddit(subreddit), time)
+    try:
+        imageUrls = get_top_images(r.get_subreddit(subreddit), time)
+    except:
+        print('Unable to connect to internet. Re-using local files...')
+        return os.path.join(wallpaprDir, files[random.randint(0, len(files) - 1)])
 
     for i in range(0, len(imageUrls)):
         # Pick a random URL from list
         random.seed()
         imageUrl = imageUrls[random.randint(0, len(imageUrls) - 1)]
 
-        # Get home directory and location where image will be saved (default location for Ubuntu is used)
-        homedir = os.path.expanduser('~')
-        fileName = imageUrl.rsplit("/", 1)[1]
-        imageLocation = homedir + "\\Pictures\\Wallpapers\\" + fileName
-        
-        # Create folders if they don't exist
-        dir = os.path.dirname(imageLocation)
-        if not os.path.exists(dir):
-            os.makedirs(dir)
+        # Get home directory and location where image will be saved
+        imageName = imageUrl.rsplit("/", 1)[1]
+        imageLocation = wallpaprDir + imageName
 
         # See if image is available locally. If yes, re-use
-        files = [f for f in os.listdir(dir) if os.path.isfile(os.path.join(dir, f))]
-        if fileName in files:
+        if imageName in files:
             print('Image found in the local dir. Will be reused!')
             return imageLocation
 
@@ -89,7 +100,7 @@ def get_image_from_reddit(subreddit, time):
             response = requests.get(imageUrl)
         except:
             print('Unable to connect to internet. Re-using local files...')
-            return os.path.join(dir, files[random.randint(0, len(files) - 1)])
+            return os.path.join(wallpaprDir, files[random.randint(0, len(files) - 1)])
 
         # If image is available online, proceed to save
         if response.status_code == 200:
@@ -121,8 +132,8 @@ def get_image_from_reddit(subreddit, time):
         else:
             print('Image not found!')
 
-    # If here, then no good image found.
-    return ''
+    # If here, then no good image found from internet. Use local
+    return os.path.join(wallpaprDir, files[random.randint(0, len(files) - 1)])
 
 
 if __name__ == '__main__':
