@@ -13,7 +13,8 @@ from PIL import Image
 def main():
     # Argument parser
     parser = argparse.ArgumentParser()
-    subs = r"wallpapers+wallpaper+WQHD_Wallpaper+topwalls+multiwall+gmbwallpapers+gmbwallpapers"
+    subs = r"wallpapers+wallpaper+WQHD_Wallpaper+topwalls+multiwall+" \
+           r"gmbwallpapers+gmbwallpapers+MinimalWallpaper+WidescreenWallpaper+EarthPorn"
     parser.add_argument("-s", "--subreddit", type=str, default=subs)
     parser.add_argument("-t", "--time", type=str, default="day")
     args = parser.parse_args()
@@ -74,7 +75,7 @@ def get_top_images(subreddit, time):
 # Get image from reddit and save in local folder
 def get_image_from_reddit(subreddit, time, wallpaprDir):
     # Get Praw object
-    r = praw.Reddit(user_agent="Get top wallpaper - by /u/ssimunic & /u/admin-mod")
+    r = praw.Reddit(user_agent="Get top wallpaper - by /u/admin-mod (original by /u/ssimunic)")
 
     # Get top image paths in a list
     try:
