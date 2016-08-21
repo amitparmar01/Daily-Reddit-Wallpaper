@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import praw
 import os
-import subprocess
 import requests
 import argparse
 import ctypes
@@ -14,7 +13,7 @@ def main():
     # Argument parser
     parser = argparse.ArgumentParser()
     subs = r"wallpapers+wallpaper+WQHD_Wallpaper+topwalls+multiwall+" \
-           r"gmbwallpapers+gmbwallpapers+MinimalWallpaper+WidescreenWallpaper+EarthPorn"
+           r"gmbwallpapers+gmbwallpapers+MinimalWallpaper+WidescreenWallpaper"
     parser.add_argument("-s", "--subreddit", type=str, default=subs)
     parser.add_argument("-t", "--time", type=str, default="day")
     args = parser.parse_args()
@@ -96,10 +95,14 @@ def get_image_from_reddit(subreddit, time, wallpaprDir):
         imageName = imageUrl.rsplit("/", 1)[1]
         imageLocation = wallpaprDir + imageName
 
-        # See if image is available locally. If yes, re-use
+        # See if image is available locally. If yes, select another
         if get_image_from_local(wallpaprDir, existingFile=imageName) == imageName:
-            print('Image found in the local dir. Will be reused!')
-            return imageLocation
+            print('Image found in the local dir. Selecting another!')
+            if i == len(imageUrls) - 1:
+                raise ValueError('No new image found from Reddit. Reusing local...')
+            else:
+                continue
+            # return imageLocation
 
         # Request image
         print('Requesting image - ', imageUrl)
